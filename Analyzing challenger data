@@ -1,0 +1,37 @@
+library(faraway)
+
+data = orings
+
+#Total of 6 orings per shuttle, 23 recorded launches. Binomial.
+#Data shows number of orings damaged per flight and launch temperature of flight.
+
+plot(data, xlim = c(28,85))
+
+#linear model:
+#divide by 6 to get probability function.
+
+plot(data$temp, data$damage/6, xlim = c(28,85))
+mdl = lm(damage/6~temp, data = data)
+abline(mdl)
+
+#Bad model as probabilities can not be negative.
+#also error terms should in this case be assumed to belong to a binomial distribution, not a normaldistribution.
+#Y_i belongs to Bin(n_i,p_i), P(Y_i = y_i) = bin function(n_i,y_i,p_i)
+
+#LINK FUNCTION: n = g(p) = B_0 + B_1x_1 + ... + B_qx_q such that 0 < g^(-1)(n) < 1 such that p = g^(-1)(n)
+#a generalized linear model (GLM). In distributional case we have a choice of three different
+#link functions. Logit link, probit and complementary log-log. Let's use logitmod:
+
+orings$nondamage = 6 - orings$damage
+logitmod <- glm(cbind(damage,nondamage) ~ temp, family = binomial, data = orings)
+summary(logitmod)
+#n_i = 11.66299 - 0.2162 * temp_i --> p = exp(n)/(1+exp(n))
+plot(damage/6~temp, data = orings, xlim = c(28,85), ylim = c(0,1), ylab = "Probability of damage", xlab = "temperature")
+x = seq(28,85, length.out = 100)
+#probability function eta:
+
+eta = coef(logitmod)[1]+coef(logitmod)[2]*x;
+lines(x, ilogit(eta))
+x0 = data.frame(temp = 31)
+predict(logitmod,x0, type = "response")
+abline(v= 31)
